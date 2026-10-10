@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لعبة كرة القدم البسيطة</title>
+  <style>
+    body {
+      background-color: #1b4332;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    canvas {
+      background: #2d6a4f;
+      border: 4px solid #ffffff;
+      border-radius: 8px;
+      display: block;
+      margin: 10px auto;
+    }
+    .controls-info {
+      font-size: 14px;
+      color: #d8f3dc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>⚽ لعبة كرة القدم البسيطة</h2>
+  <p class="controls-info">استخدم **الأسهم** للتحرك، وزر **المسطرة (Space)** لتسديد الكرة!</p>
+
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // كائن اللاعب
+    const player = {
+      x: 100,
+      y: 200,
+      radius: 15,
+      color: '#ff4d6d',
+      speed: 4
+    };
+
+    // كائن الكرة
+    const ball = {
+      x: 300,
+      y: 200,
+      radius: 10,
+      color: '#ffffff',
+      vx: 0,
+      vy: 0,
+      friction: 0.98
+    };
+
+    // المرمى
+    const goal = {
+      x: 580,
+      y: 130,
+      width: 20,
+      height: 140
+    };
+
+    let score = 0;
+    const keys = {};
+
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function update() {
+      // تحريك اللاعب بالأسهم
+      if (keys['ArrowUp'] && player.y - player.radius > 0) player.y -= player.speed;
+      if (keys['ArrowDown'] && player.y + player.radius < canvas.height) player.y += player.speed;
+      if (keys['ArrowLeft'] && player.x - player.radius > 0) player.x -= player.speed;
+      if (keys['ArrowRight'] && player.x + player.radius < canvas.width) player.x += player.speed;
+
+      // حساب التصادم بين اللاعب والكرة
+      let dx = ball.x - player.x;
+      let dy = ball.y - player.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < player.radius + ball.radius) {
+        let angle = Math.atan2(dy, dx);
+        let force = 3;
+        
+        // التسديد بالقوة إذا تم ضغط المسطرة
+        if (keys['Space']) {
+          force = 9;
+        }
+
+        ball.vx = Math.cos(angle) * force;
+        ball.vy = Math.sin(angle) * force;
+      }
+
+      // تحريك الكرة واحتكاكها
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      ball.vx *= ball.friction;
+      ball.vy *= ball.friction;
+
+      // ارتداد الكرة من الحواف
+      if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
+      if (ball.x + ball.radius > canvas.width) { ball.x = canvas.width - ball.radius; ball.vx *= -1; }
+      if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -1; }
+      if (ball.y + ball.radius > canvas.height) { ball.y = canvas.height - ball.radius; ball.vy *= -1; }
+
+      // تسجيل الهدف
+      if (ball.x + ball.radius >= goal.x && ball.y >= goal.y && ball.y <= goal.y + goal.height) {
+        score++;
+        resetBall();
+      }
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.vx = 0;
+      ball.vy = 0;
+    }
+
+    function draw() {
+      // مسح الشاشة
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // رسم خط المنتصف
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+
+      // رسم دائرة المنتصف
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // رسم المرمى
+      ctx.fillStyle = '#ffb703';
+      ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+      // رسم اللاعب
+      ctx.fillStyle = player.color;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // رسم الكرة
+      ctx.fillStyle = ball.color;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // رسم النتيجة
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '20px sans-serif';
+      ctx.fillText('الأهداف:
